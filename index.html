@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Oh! MyBook</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+    body { font-family: 'Noto Sans KR', system-ui, sans-serif; background: #f5f0e8; }
+    input[type=range] { accent-color: #2d4a3e; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const PRIMARY="#2d4a3e",ACCENT="#7ec8a0",ACCENT_L="#c8dfc8",BG="#f5f0e8",AMBER="#e8a040",CORAL="#c04a2a",TEXT="#2d3a2e",MUTED="#888",BORDER="#e8e3d8";
+const COVERS=["#8b7355","#c04a2a","#e8a040","#5a8a6a","#3a5a7a","#7a4a6a","#4a6a5a","#6a4a2a","#2a4a6a","#5a3a2a"];
+const CATS=["기획력/기획서","자기개발","프레젠테이션","독서/글쓰기/기타","컴퓨터/파워포인트","미술/디자인/카메라"];
+const CAT_COLORS=["#4472c4","#e05c3a","#7ab648","#7b5ea7","#2ba8a8","#e8a040"];
+const CAT_DATA=[388,246,214,103,87,144];
+
+const BOOKS_INIT=[
+  {id:1,title:"불편한 편의점",author:"김호연",category:"독서/글쓰기/기타",status:"완독",pages:352,readPages:352,rating:4.5,date:"2026-06-10",color:"#8b7355",note:"따뜻한 이야기",thumbnail:null},
+  {id:2,title:"아주 작은 습관의 힘",author:"제임스 클리어",category:"자기개발",status:"완독",pages:280,readPages:280,rating:5,date:"2026-06-07",color:"#c04a2a",note:"실천이 중요",thumbnail:null},
+  {id:3,title:"역행자",author:"자청",category:"자기개발",status:"읽는 중",pages:380,readPages:291,rating:4,date:"2026-06-04",color:"#e8a040",note:"인사이트 많음",thumbnail:null},
+  {id:4,title:"달러구트 꿈 백화점",author:"이미예",category:"기획력/기획서",status:"미독",pages:310,readPages:0,rating:0,date:"2026-05-20",color:"#5a8a6a",note:"",thumbnail:null},
+  {id:5,title:"사피엔스",author:"유발 하라리",category:"독서/글쓰기/기타",status:"완독",pages:636,readPages:636,rating:5,date:"2026-05-15",color:"#3a5a7a",note:"인류의 역사",thumbnail:null},
+  {id:6,title:"돈의 심리학",author:"모건 하우젤",category:"기획력/기획서",status:"완독",pages:336,readPages:336,rating:4.5,date:"2026-05-10",color:"#7a4a6a",note:"",thumbnail:null},
+  {id:7,title:"클루지",author:"게리 마커스",category:"독서/글쓰기/기타",status:"미독",pages:256,readPages:0,rating:0,date:"2026-05-05",color:"#4a6a5a",note:"",thumbnail:null},
+  {id:8,title:"팩트풀니스",author:"한스 로슬링",category:"기획력/기획서",status:"미독",pages:392,readPages:0,rating:0,date:"2026-04-28",color:"#6a4a2a",note:"",thumbnail:null},
+  {id:9,title:"홍 균 쇠",author:"제레드 다이아몬드",category:"독서/글쓰기/기타",status:"완독",pages:554,readPages:554,rating:5,date:"2026-04-20",color:"#2a4a6a",note:"필독서",thumbnail:null},
+  {id:10,title:"완병",author:"게리 폴러",category:"자기개발",status:"미독",pages:298,readPages:0,rating:0,date:"2026-04-15",color:"#5a3a2a",note:"",thumbnail:null},
+];
+const GOALS_INIT={annual:100,monthly:10,weekly:2,annualDone:62,monthlyDone:6,weeklyDone:1};
+const WEEK_INIT=[{day:"월",min:45},{day:"화",min:60},{day:"수",min:30},{day:"목",min:90},{day:"금",min:50},{day:"토",min:70},{day:"일",min:0}];
+const QUOTES=[
+  {text:"자신의 인생을 바꾸고 싶다면, 오늘의 작은 선택부터 바꿔라.",source:"역행자, 자청"},
+  {text:"책은 우리 안의 잠든 지식을 깨우는 열쇠이다.",source:"윌리엄 셰익스피어"},
+  {text:"오늘 읽기를 멈추면 내일 이끌기를 멈춘다.",source:"해리 S. 트루먼"},
+  {text:"독서는 완성된 사람을 만든다.",source:"프랜시스 베이컨"},
+];
+const WORDS=[
+  {word:"사색",hanja:"思索",def:"깊이 생각하고 이치를 탐구함.",ex:"그는 조용히 창가에 앉아 사색에 잠겼다."},
+  {word:"통찰",hanja:"洞察",def:"예리하게 꿰뚫어 봄.",ex:"그의 통찰력 있는 분석이 돋보였다."},
+  {word:"성찰",hanja:"省察",def:"자기의 마음을 반성하고 살핌.",ex:"매일 밤 하루를 성찰하는 습관을 들였다."},
+];
+const PURCHASE={
+  중기:[{year:2016,books:11,price:214600,recent:true},{year:2015,books:25,price:478100,recent:true},{year:2014,books:54,price:837700,recent:true},{year:2013,books:99,price:1623100},{year:2012,books:108,price:1599900},{year:2011,books:117,price:1699900},{year:2010,books:147,price:2038980},{year:2009,books:86,price:1225800},{year:2008,books:96,price:1266500}],
+  초기:[{year:2007,books:136,price:1549200},{year:2006,books:105,price:1208500},{year:2005,books:140,price:1710400},{year:2004,books:86,price:1025000},{year:2003,books:108,price:1253200},{year:null,label:"기타",books:78,price:1028100}],
+};
+const GRP_COLOR={중기:"#4a7a8a",초기:"#5a8a6a"};
+const CAT_DETAIL=[
+  {group:"기획력/기획서",color:"#4472c4",lightBg:"#eef2fb",sub:[{name:"기획력향상",c1:129,c2:71,price:1624600},{name:"기획서작성",c1:55,c2:18,price:648100},{name:"아이디어/창의력",c1:60,c2:3,price:703500},{name:"사업/창업",c1:52,c2:0,price:625500}]},
+  {group:"자기개발",color:"#e05c3a",lightBg:"#fdf0ec",sub:[{name:"자기개발",c1:45,c2:24,price:481400},{name:"교양",c1:83,c2:70,price:987800},{name:"심리학",c1:24,c2:0,price:273200}]},
+  {group:"프레젠테이션",color:"#7ab648",lightBg:"#f2f9ea",sub:[{name:"프레젠테이션",c1:98,c2:34,price:1190700},{name:"스피치/제스처",c1:46,c2:14,price:484600},{name:"커뮤니케이션",c1:22,c2:0,price:266000}]},
+  {group:"독서/글쓰기/기타",color:"#7b5ea7",lightBg:"#f4f0fa",sub:[{name:"독서/글쓰기",c1:65,c2:21,price:756400},{name:"기타",c1:17,c2:0,price:121200}]},
+  {group:"컴퓨터/파워포인트",color:"#2ba8a8",lightBg:"#e8f7f7",sub:[{name:"컴퓨터",c1:45,c2:3,price:330900},{name:"파워포인트",c1:38,c2:1,price:333500}]},
+  {group:"미술/디자인/카메라",color:"#e8a040",lightBg:"#fdf3e3",sub:[{name:"디자인",c1:54,c2:14,price:976100},{name:"오래된책(디자인)",c1:27,c2:0,price:788000},{name:"카메라",c1:21,c2:0,price:400600},{name:"미술",c1:28,c2:0,price:318900}]},
+];
+const NAV=[{key:"home",icon:"🏠",label:"홈"},{key:"library",icon:"📚",label:"내 서재"},{key:"purchase",icon:"🛒",label:"구매 도서 현황"},{key:"reading",icon:"👁",label:"읽는 중"},{key:"wishlist",icon:"🔖",label:"미독서"},{key:"goals",icon:"🎯",label:"독서 목표"},{key:"stats",icon:"📊",label:"통계"},{key:"quotes",icon:"💬",label:"문장/어휘"},{key:"search",icon:"🔍",label:"책 검색"},{key:"settings",icon:"⚙️",label:"설정"}];
+
+const fmtNum=n=>Number(n).toLocaleString();
+function loadLS(k,d){try{const s=localStorage.getItem(k);return s?JSON.parse(s):d;}catch(e){return d;}}
+function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+function Ring({pct,color,size,stroke}){
+  const sz=size||56,sw=stroke||5,r=(sz-sw*2)/2,circ=2*Math.PI*r,p=Math.min(100,pct||0),dash=(p/100)*circ;
+  return(<svg width={sz} height={sz} style={{display:"block"}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={BORDER} strokeWidth={sw}/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={color} strokeWidth={sw} strokeDasharray={dash+" "+circ} strokeLinecap="round" transform={"rotate(-90 "+(sz/2)+" "+(sz/2)+")"}/>  <text x={sz/2} y={sz/2+4} textAnchor="middle" fontSize={11} fontWeight="600" fill={TEXT}>{p}%</text></svg>);
+}
+function Donut({data,colors,size}){
+  const sz=size||88,total=data.reduce((a,b)=>a+b,0)||1,cx=sz/2,cy=sz/2,R=sz/2-4,r=R*0.52;let ang=-Math.PI/2;
+  const sl=data.map((v,i)=>{const a=(v/total)*2*Math.PI,x1=cx+R*Math.cos(ang),y1=cy+R*Math.sin(ang),ix1=cx+r*Math.cos(ang),iy1=cy+r*Math.sin(ang);ang+=a;const x2=cx+R*Math.cos(ang),y2=cy+R*Math.sin(ang),ix2=cx+r*Math.cos(ang),iy2=cy+r*Math.sin(ang),lg=a>Math.PI?1:0,d="M"+x1+","+y1+"A"+R+","+R+" 0 "+lg+",1 "+x2+","+y2+"L"+ix2+","+iy2+"A"+r+","+r+" 0 "+lg+",0 "+ix1+","+iy1+"Z";return <path key={i} d={d} fill={colors[i]} stroke="#fff" strokeWidth={1}/>;});
+  return(<svg width={sz} height={sz}>{sl}<circle cx={cx} cy={cy} r={r-1} fill="#fff"/><text x={cx} y={cy+3} textAnchor="middle" fontSize={9} fontWeight="700" fill={PRIMARY}>{total}</text></svg>);
+}
+function Stars({val}){return<span>{[1,2,3,4,5].map(i=><span key={i} style={{color:i<=val?"#e8a040":"#ddd",fontSize:11}}>★</span>)}</span>;}
+function Toast({msg,onDone}){useEffect(()=>{const t=setTimeout(onDone,2200);return()=>clearTimeout(t);},[]);return<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#2d3a2e",color:"#fff",padding:"10px 20px",borderRadius:8,fontSize:12,zIndex:9999,whiteSpace:"nowrap"}}>{msg}</div>;}
+function Confirm({msg,onOk,onCancel}){return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{background:"#fff",borderRadius:12,padding:24,width:280,textAlign:"center"}}><div style={{fontSize:13,color:TEXT,marginBottom:20,lineHeight:1.6}}>{msg}</div><div style={{display:"flex",gap:8}}><button onClick={onCancel} style={{flex:1,padding:"8px 0",border:"0.5px solid "+BORDER,background:"#fff",borderRadius:6,cursor:"pointer",fontSize:12}}>취소</button><button onClick={onOk} style={{flex:1,padding:"8px 0",background:CORAL,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>삭제</button></div></div></div>);}
+
+function BookCover({book,width,height,fontSize,style}){
+  const w=width||44,h=height||60,fs=fontSize||8,base={width:w,height:h,borderRadius:4,flexShrink:0,overflow:"hidden",...style};
+  if(book.thumbnail)return<div style={base}><img src={book.thumbnail} alt={book.title} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/></div>;
+  return<div style={{...base,background:book.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:fs,color:"#fff",textAlign:"center",padding:3,fontWeight:600,lineHeight:1.3}}>{book.title.slice(0,6)}</div>;
+}
+
+function BookCard({book,onClick,onDelete}){
+  const sBg=book.status==="완독"?"#eaf3de":book.status==="읽는 중"?"#faeeda":"#f1efe8";
+  const sC=book.status==="완독"?"#3b6d11":book.status==="읽는 중"?"#854f0b":"#888";
+  return(<div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px",display:"flex",gap:10,alignItems:"flex-start",position:"relative"}}>
+    <div onClick={()=>onClick(book)} style={{cursor:"pointer",flexShrink:0}}><BookCover book={book} width={44} height={60} fontSize={8}/></div>
+    <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>onClick(book)}>
+      <div style={{fontWeight:600,fontSize:12,color:TEXT,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{book.title}</div>
+      <div style={{fontSize:10,color:MUTED}}>{book.author}</div>
+      <div style={{display:"flex",alignItems:"center",gap:4,marginTop:3}}><span style={{fontSize:9,background:sBg,color:sC,padding:"1px 5px",borderRadius:3,fontWeight:500}}>{book.status}</span><span style={{fontSize:9,color:MUTED}}>{book.category}</span></div>
+      {book.status==="읽는 중"&&<div style={{marginTop:4}}><div style={{height:3,background:BORDER,borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",background:PRIMARY,width:Math.round((book.readPages/book.pages)*100)+"%",borderRadius:2}}/></div><div style={{fontSize:8,color:MUTED,marginTop:1}}>{book.readPages}p / {book.pages}p</div></div>}
+    </div>
+    <button onClick={e=>{e.stopPropagation();onDelete(book);}} style={{position:"absolute",top:6,right:6,width:20,height:20,border:"none",background:"transparent",cursor:"pointer",fontSize:13,color:"#ccc"}}>✕</button>
+  </div>);
+}
+
+function EditModal({book,onClose,onUpdate,onDelete}){
+  const [note,setNote]=useState(book.note||"");
+  const [readPages,setReadPages]=useState(book.readPages);
+  const [rating,setRating]=useState(book.rating);
+  const [status,setStatus]=useState(book.status);
+  const [thumbnail,setThumbnail]=useState(book.thumbnail||null);
+  const [confirmDel,setConfirmDel]=useState(false);
+  const readFile=file=>{if(!file||!file.type.startsWith("image/"))return;const r=new FileReader();r.onload=e=>setThumbnail(e.target.result);r.readAsDataURL(file);};
+  const handleSave=()=>{onUpdate({...book,note,readPages,rating,status,thumbnail});onClose();};
+  return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{background:"#fff",borderRadius:12,padding:24,width:330,maxHeight:"88vh",overflowY:"auto"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+        <div style={{display:"flex",gap:14,alignItems:"flex-start"}}>
+          <div style={{flexShrink:0}}>{thumbnail?<img src={thumbnail} alt="cover" style={{width:60,height:80,objectFit:"cover",borderRadius:6,display:"block",border:"0.5px solid "+BORDER}}/>:<div style={{width:60,height:80,borderRadius:6,background:book.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:600,textAlign:"center",padding:4,lineHeight:1.3}}>{book.title.slice(0,6)}</div>}</div>
+          <div style={{flex:1}}><div style={{fontWeight:700,fontSize:14,color:TEXT}}>{book.title}</div><div style={{fontSize:11,color:MUTED,marginTop:2}}>{book.author}</div><div style={{fontSize:10,color:MUTED,marginTop:1}}>{book.category}</div></div>
+        </div>
+        <button onClick={()=>setConfirmDel(true)} style={{background:"#fff5f5",border:"0.5px solid #f0c0c0",color:CORAL,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontWeight:500,flexShrink:0}}>🗑 삭제</button>
+      </div>
+      <label style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 14px",background:"#f0f7f4",border:"1.5px dashed "+PRIMARY,borderRadius:8,cursor:"pointer"}}>
+        <span style={{fontSize:22}}>📷</span>
+        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:PRIMARY}}>{thumbnail?"표지 이미지 변경":"표지 이미지 업로드"}</div><div style={{fontSize:10,color:MUTED,marginTop:1}}>클릭하여 JPG / PNG / WebP 선택</div></div>
+        {thumbnail&&<button onClick={e=>{e.preventDefault();setThumbnail(null);}} style={{fontSize:10,color:CORAL,background:"none",border:"0.5px solid #f0c0c0",borderRadius:4,padding:"3px 7px",cursor:"pointer",flexShrink:0}}>제거</button>}
+        <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>readFile(e.target.files[0])}/>
+      </label>
+      <div style={{marginBottom:12}}><label style={{fontSize:11,color:MUTED,display:"block",marginBottom:4}}>독서 상태</label><div style={{display:"flex",gap:6}}>{["미독","읽는 중","완독"].map(s=><button key={s} onClick={()=>setStatus(s)} style={{flex:1,padding:"6px 0",fontSize:11,border:"1px solid "+(status===s?PRIMARY:BORDER),background:status===s?PRIMARY:"#fff",color:status===s?"#fff":TEXT,borderRadius:5,cursor:"pointer",fontWeight:status===s?600:400}}>{s}</button>)}</div></div>
+      {status==="읽는 중"&&<div style={{marginBottom:12}}><label style={{fontSize:11,color:MUTED,display:"block",marginBottom:4}}>읽은 페이지 ({readPages} / {book.pages}p)</label><input type="range" min={0} max={book.pages} step={1} value={readPages} onChange={e=>setReadPages(Number(e.target.value))} style={{width:"100%"}}/></div>}
+      <div style={{marginBottom:12}}><label style={{fontSize:11,color:MUTED,display:"block",marginBottom:4}}>별점</label><div style={{display:"flex",gap:4}}>{[1,2,3,4,5].map(i=><span key={i} onClick={()=>setRating(i)} style={{fontSize:24,cursor:"pointer",color:i<=rating?"#e8a040":"#ddd"}}>★</span>)}</div></div>
+      <div style={{marginBottom:16}}><label style={{fontSize:11,color:MUTED,display:"block",marginBottom:4}}>메모</label><textarea value={note} onChange={e=>setNote(e.target.value)} rows={3} style={{width:"100%",border:"0.5px solid "+BORDER,borderRadius:6,padding:"6px 8px",fontSize:12,resize:"none",outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/></div>
+      <div style={{display:"flex",gap:8}}><button onClick={onClose} style={{flex:1,padding:"8px 0",border:"0.5px solid "+BORDER,background:"#fff",borderRadius:6,cursor:"pointer",fontSize:12}}>취소</button><button onClick={handleSave} style={{flex:1,padding:"8px 0",background:PRIMARY,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>저장</button></div>
+    </div>
+    {confirmDel&&<Confirm msg={"\""+book.title+"\"을(를) 삭제할까요?"} onOk={()=>{onDelete(book.id);onClose();}} onCancel={()=>setConfirmDel(false)}/>}
+  </div>);
+}
+
+function AddModal({onClose,onAdd}){
+  const [form,setForm]=useState({title:"",author:"",category:"자기개발",pages:"300",status:"미독"});
+  const [thumbnail,setThumbnail]=useState(null);
+  const [dragOver,setDragOver]=useState(false);
+  const sf=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
+  const readFile=file=>{if(!file||!file.type.startsWith("image/"))return;const r=new FileReader();r.onload=e=>setThumbnail(e.target.result);r.readAsDataURL(file);};
+  const handleAdd=()=>{if(!form.title.trim()||!form.author.trim())return;onAdd({...form,pages:Number(form.pages)||200,id:Date.now(),readPages:0,rating:0,date:new Date().toISOString().slice(0,10),color:COVERS[Math.floor(Math.random()*COVERS.length)],thumbnail:thumbnail||null,note:""});onClose();};
+  return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{background:"#fff",borderRadius:12,padding:24,width:340,maxHeight:"90vh",overflowY:"auto"}}>
+      <h3 style={{fontSize:15,fontWeight:700,marginBottom:16,color:TEXT}}>📖 책 추가</h3>
+      <div style={{marginBottom:14}}>
+        <label style={{fontSize:11,color:MUTED,display:"block",marginBottom:6}}>책 표지 이미지</label>
+        <div onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={e=>{e.preventDefault();setDragOver(false);readFile(e.dataTransfer.files[0]);}} style={{border:"1.5px dashed "+(dragOver?PRIMARY:BORDER),borderRadius:8,padding:12,textAlign:"center",background:dragOver?"#f0f7f4":"#fafaf8",display:"flex",gap:12,alignItems:"center"}}>
+          {thumbnail?(<><img src={thumbnail} alt="cover" style={{width:54,height:72,objectFit:"cover",borderRadius:4,flexShrink:0,border:"0.5px solid "+BORDER}}/><div style={{flex:1,textAlign:"left"}}><div style={{fontSize:11,color:PRIMARY,fontWeight:600,marginBottom:4}}>표지 등록됨 ✓</div><button onClick={()=>setThumbnail(null)} style={{fontSize:10,color:CORAL,background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>제거</button></div></>):(<div style={{flex:1}}><div style={{fontSize:22,marginBottom:4}}>🖼</div><div style={{fontSize:11,color:MUTED,marginBottom:6}}>이미지를 드래그하거나 클릭하여 업로드</div><label style={{fontSize:11,color:PRIMARY,fontWeight:600,cursor:"pointer",border:"0.5px solid "+PRIMARY,borderRadius:5,padding:"4px 12px"}}>파일 선택<input type="file" accept="image/*" style={{display:"none"}} onChange={e=>readFile(e.target.files[0])}/></label></div>)}
+        </div>
+      </div>
+      {[["제목","title","text"],["저자","author","text"],["페이지수","pages","number"]].map(([lb,k,t])=>(<div key={k} style={{marginBottom:10}}><label style={{fontSize:11,color:MUTED,display:"block",marginBottom:3}}>{lb}</label><input type={t} value={form[k]} onChange={sf(k)} style={{width:"100%",border:"0.5px solid "+BORDER,borderRadius:6,padding:"7px 8px",fontSize:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/></div>))}
+      <div style={{marginBottom:10}}><label style={{fontSize:11,color:MUTED,display:"block",marginBottom:3}}>카테고리</label><select value={form.category} onChange={sf("category")} style={{width:"100%",border:"0.5px solid "+BORDER,borderRadius:6,padding:"7px 8px",fontSize:12,outline:"none"}}>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+      <div style={{marginBottom:16}}><label style={{fontSize:11,color:MUTED,display:"block",marginBottom:4}}>상태</label><div style={{display:"flex",gap:6}}>{["미독","읽는 중","완독"].map(s=><button key={s} onClick={()=>setForm(f=>({...f,status:s}))} style={{flex:1,padding:"6px 0",fontSize:11,border:"1px solid "+(form.status===s?PRIMARY:BORDER),background:form.status===s?PRIMARY:"#fff",color:form.status===s?"#fff":TEXT,borderRadius:5,cursor:"pointer"}}>{s}</button>)}</div></div>
+      <div style={{display:"flex",gap:8}}><button onClick={onClose} style={{flex:1,padding:"8px 0",border:"0.5px solid "+BORDER,background:"#fff",borderRadius:6,cursor:"pointer",fontSize:12}}>취소</button><button onClick={handleAdd} style={{flex:1,padding:"8px 0",background:PRIMARY,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>추가</button></div>
+    </div>
+  </div>);
+}
+
+function GoalsModal({goals,weekData,onSaveGoals,onSaveWeek,onClose}){
+  const [g,setG]=useState({...goals});
+  const [w,setW]=useState(weekData.map(d=>({...d})));
+  const sg=(k,v)=>setG(p=>({...p,[k]:Number(v)}));
+  const sw2=(i,v)=>setW(p=>p.map((x,j)=>j===i?{...x,min:Number(v)}:x));
+  const sliders=[["연간 목표",10,365,5,"annual"],["연간 달성",0,365,1,"annualDone"],["월간 목표",1,31,1,"monthly"],["월간 달성",0,31,1,"monthlyDone"],["주간 목표",1,7,1,"weekly"],["주간 달성",0,7,1,"weeklyDone"]];
+  return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{background:"#fff",borderRadius:12,padding:24,width:360,maxHeight:"85vh",overflowY:"auto"}}>
+      <h3 style={{fontSize:15,fontWeight:700,marginBottom:16,color:TEXT}}>⚙️ 독서 목표 · 시간 편집</h3>
+      <div style={{fontSize:12,fontWeight:600,color:PRIMARY,marginBottom:10}}>📌 목표 권수</div>
+      {sliders.map(([lb,mn,mx,st,k])=>(<div key={k} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><label style={{fontSize:11,color:MUTED}}>{lb}</label><span style={{fontSize:12,fontWeight:600,color:PRIMARY}}>{g[k]}권</span></div><input type="range" min={mn} max={mx} step={st} value={g[k]} onChange={e=>sg(k,e.target.value)} style={{width:"100%"}}/></div>))}
+      <div style={{fontSize:12,fontWeight:600,color:PRIMARY,marginBottom:10,marginTop:16}}>📅 이번 주 독서 시간 (분)</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:6}}>{w.map((d,i)=>(<div key={d.day} style={{textAlign:"center"}}><div style={{fontSize:10,color:MUTED,marginBottom:3}}>{d.day}</div><input type="number" min={0} max={480} step={5} value={d.min} onChange={e=>sw2(i,e.target.value)} style={{width:"100%",border:"0.5px solid "+BORDER,borderRadius:4,padding:"4px 0",fontSize:11,textAlign:"center",outline:"none",boxSizing:"border-box"}}/></div>))}</div>
+      <div style={{display:"flex",gap:8,marginTop:20}}><button onClick={onClose} style={{flex:1,padding:"8px 0",border:"0.5px solid "+BORDER,background:"#fff",borderRadius:6,cursor:"pointer",fontSize:12}}>취소</button><button onClick={()=>{onSaveGoals(g);onSaveWeek(w);onClose();}} style={{flex:1,padding:"8px 0",background:PRIMARY,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>저장</button></div>
+    </div>
+  </div>);
+}
+
+function CatDetailModal({onClose}){
+  return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{background:"#fff",borderRadius:14,width:"100%",maxWidth:620,maxHeight:"88vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{padding:"14px 20px",background:"#1e3a30",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}><div><div style={{fontSize:14,fontWeight:700,color:"#fff"}}>📚 소장 도서 상세 분포</div><div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:1}}>카테고리 · 차수별 구매 현황</div></div><button onClick={onClose} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",width:28,height:28,borderRadius:6,cursor:"pointer",fontSize:14}}>✕</button></div>
+      <div style={{display:"flex",gap:8,padding:"10px 20px",background:"#f8f5f0",borderBottom:"0.5px solid "+BORDER,flexShrink:0}}>{[{l:"총 소장",v:"1,182권"},{l:"1차 구매",v:"909권"},{l:"2차 구매",v:"273권"},{l:"총 금액",v:"₩11,311,000"}].map(s=><div key={s.l} style={{flex:1,textAlign:"center",background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"6px 0"}}><div style={{fontSize:9,color:MUTED}}>{s.l}</div><div style={{fontSize:12,fontWeight:700,color:TEXT}}>{s.v}</div></div>)}</div>
+      <div style={{overflowY:"auto",flex:1}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+          <thead style={{position:"sticky",top:0,zIndex:2}}><tr style={{background:"#1e3a30"}}>{["구분","세부 분류","1차","2차","합계","구매가격"].map((h,i)=><th key={h} style={{padding:"9px 10px",color:"#fff",fontWeight:600,fontSize:10,textAlign:i>=2?"right":"left",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <tbody>
+            {CAT_DETAIL.map(cat=>{
+              const st=cat.sub.reduce((a,s)=>({c1:a.c1+s.c1,c2:a.c2+s.c2,price:a.price+s.price}),{c1:0,c2:0,price:0});
+              return cat.sub.map((s,i)=>(<tr key={cat.group+s.name} style={{background:i%2===0?"#fff":cat.lightBg,borderBottom:"0.5px solid "+BORDER}}>{i===0&&<td rowSpan={cat.sub.length} style={{verticalAlign:"middle",textAlign:"center",fontWeight:700,fontSize:12,color:"#fff",background:cat.color,padding:"8px 10px",borderRight:"0.5px solid rgba(255,255,255,0.25)",whiteSpace:"nowrap"}}>{cat.group}</td>}<td style={{padding:"7px 10px",color:TEXT}}>{s.name}</td><td style={{padding:"7px 10px",textAlign:"right"}}>{s.c1||"-"}</td><td style={{padding:"7px 10px",textAlign:"right"}}>{s.c2||"-"}</td><td style={{padding:"7px 10px",textAlign:"right",fontWeight:600,color:cat.color}}>{s.c1+s.c2}</td><td style={{padding:"7px 10px",textAlign:"right",color:"#185fa5",fontWeight:500}}>{fmtNum(s.price)}</td></tr>)).concat(<tr key={cat.group+"_s"} style={{background:cat.lightBg,borderTop:"1px solid "+cat.color,borderBottom:"2px solid "+cat.color}}><td colSpan={2} style={{padding:"6px 10px",fontWeight:700,color:cat.color,fontSize:11}}>소계</td><td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,color:cat.color}}>{st.c1}</td><td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,color:cat.color}}>{st.c2}</td><td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,color:cat.color}}>{st.c1+st.c2}</td><td style={{padding:"6px 10px",textAlign:"right",fontWeight:700,color:"#185fa5"}}>{fmtNum(st.price)}</td></tr>);
+            })}
+            <tr style={{background:"#1e3a30"}}><td colSpan={2} style={{padding:"9px 10px",color:"#fff",fontWeight:700,fontSize:12}}>종합합계</td><td style={{padding:"9px 10px",textAlign:"right",color:"#7ec8a0",fontWeight:700}}>909</td><td style={{padding:"9px 10px",textAlign:"right",color:"#7ec8a0",fontWeight:700}}>273</td><td style={{padding:"9px 10px",textAlign:"right",color:"#fff",fontWeight:700,fontSize:13}}>1,182</td><td style={{padding:"9px 10px",textAlign:"right",color:"#90c8f0",fontWeight:700,fontSize:13}}>₩11,311,000</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>);
+}
+
+function HomePage({books,goals,weekData,onCatDetail,onEditGoals}){
+  const done=books.filter(b=>b.status==="완독").length,reading=books.filter(b=>b.status==="읽는 중").length,unread=books.filter(b=>b.status==="미독").length;
+  const pct=books.length>0?Math.round((done/books.length)*100):0;
+  const totalMin=weekData.reduce((a,d)=>a+d.min,0),totalH=Math.floor(totalMin/60),totalM=totalMin%60;
+  const maxW=Math.max(...weekData.map(d=>d.min),1);
+  const recent=[...books].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  const todayQ=QUOTES[14%QUOTES.length],todayW=WORDS[14%WORDS.length];
+  const annPct=Math.round((goals.annualDone/goals.annual)*100),monPct=Math.round((goals.monthlyDone/goals.monthly)*100),wkPct=Math.round((goals.weeklyDone/goals.weekly)*100);
+  return(<div style={{display:"flex",flexDirection:"column",gap:10}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
+      {[{icon:"📚",label:"보유 도서",val:books.length+"권",sub:"▲ 32권 (이번 달)",sc:"#3b6d11",bg:"#e6f1fb"},{icon:"✅",label:"완독",val:done+"권",sub:"▲ 8권 (이번 달)",sc:"#3b6d11",bg:"#eaf3de"},{icon:"🔖",label:"미독서",val:unread+"권",sub:"▲ 18권 (이번 달)",sc:"#854f0b",bg:"#faeeda"},{icon:"👁",label:"읽는 중",val:reading+"권",sub:"현재 읽는 중",sc:MUTED,bg:"#e1f5ee"}].map((s,i)=>(<div key={i} style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px 12px"}}><div style={{width:26,height:26,borderRadius:6,background:s.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,marginBottom:5}}>{s.icon}</div><div style={{fontSize:10,color:MUTED,marginBottom:2}}>{s.label}</div><div style={{fontSize:18,fontWeight:700,color:TEXT}}>{s.val}</div><div style={{fontSize:9,color:s.sc,marginTop:2}}>{s.sub}</div></div>))}
+      <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:10,color:MUTED,marginBottom:4}}>독서 완료율</div><div style={{display:"flex",justifyContent:"center"}}><Ring pct={pct} color={PRIMARY}/></div><div style={{fontSize:9,color:MUTED,marginTop:2}}>연간 목표 80%</div></div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+      <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px 12px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><div style={{fontSize:11,fontWeight:600,color:PRIMARY}}>독서 목표</div><button onClick={onEditGoals} style={{fontSize:9,padding:"2px 7px",border:"0.5px solid "+PRIMARY,background:"#fff",color:PRIMARY,borderRadius:4,cursor:"pointer"}}>✏️ 편집</button></div>
+        <div style={{display:"flex",justifyContent:"space-around"}}>{[{l:"연간",p:annPct,c:PRIMARY},{l:"월간",p:monPct,c:AMBER},{l:"주간",p:wkPct,c:ACCENT}].map(g=><div key={g.l} style={{textAlign:"center"}}><div style={{fontSize:9,color:MUTED,marginBottom:3}}>{g.l}</div><Ring pct={g.p} color={g.c} size={52} stroke={5}/></div>)}</div>
+      </div>
+      <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px 12px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><div style={{fontSize:11,fontWeight:600,color:PRIMARY}}>이번 주 독서 요약</div><button onClick={onEditGoals} style={{fontSize:9,padding:"2px 7px",border:"0.5px solid "+PRIMARY,background:"#fff",color:PRIMARY,borderRadius:4,cursor:"pointer"}}>✏️ 편집</button></div>
+        <div style={{display:"flex",gap:10,marginBottom:8}}><div style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:MUTED}}><span>⏱</span><strong style={{fontSize:11,color:TEXT}}>{totalH}h {totalM}m</strong></div><div style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:MUTED}}><span>📖</span><strong style={{fontSize:11,color:TEXT}}>{done}권 완독</strong></div></div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:6,height:64}}>{weekData.map((d,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,height:"100%",justifyContent:"flex-end"}}><span style={{fontSize:8,color:MUTED}}>{d.min?d.min+"분":""}</span><div style={{width:"100%",background:d.min>0?PRIMARY:ACCENT_L,borderRadius:"3px 3px 0 0",height:d.min?Math.max(4,Math.round((d.min/maxW)*46))+"px":"3px"}}/><span style={{fontSize:8,color:MUTED}}>{d.day}</span></div>)}</div>
+      </div>
+      <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px 12px"}}>
+        <div style={{fontSize:11,fontWeight:600,color:PRIMARY,marginBottom:6}}>내 서재 (최근 추가)</div>
+        <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:4}}>{[...books].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(b=><div key={b.id} style={{minWidth:54,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><BookCover book={b} width={54} height={72} fontSize={8} style={{borderRadius:4,boxShadow:"1px 2px 6px rgba(0,0,0,0.13)"}}/><div style={{fontSize:8,color:MUTED,textAlign:"center",maxWidth:54,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.title}</div></div>)}</div>
+      </div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+      <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px 12px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}><div style={{fontSize:11,fontWeight:600,color:PRIMARY}}>소장 도서 분포</div><button onClick={onCatDetail} style={{fontSize:9,padding:"2px 8px",border:"0.5px solid "+PRIMARY,background:"#fff",color:PRIMARY,borderRadius:4,cursor:"pointer",fontWeight:500}}>상세 보기</button></div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}><div style={{flexShrink:0}}><Donut data={CAT_DATA} colors={CAT_COLORS} size={88}/></div><div style={{display:"flex",flexDirection:"column",gap:2,flex:1}}>{CATS.map((c,i)=><div key={c} style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#555"}}><div style={{width:7,height:7,borderRadius:2,background:CAT_COLORS[i],flexShrink:0}}/><span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c}</span><span style={{fontWeight:600,color:TEXT,flexShrink:0}}>{CAT_DATA[i]}</span></div>)}</div></div>
+      </div>
+      <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px 12px"}}>
+        <div style={{fontSize:11,fontWeight:600,color:PRIMARY,marginBottom:6}}>최근 독서 기록</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {recent.length===0&&<div style={{fontSize:11,color:MUTED,textAlign:"center",padding:"10px 0"}}>기록 없음</div>}
+          {recent.map((b,i)=><div key={b.id} style={{display:"flex",gap:8,alignItems:"flex-start",paddingBottom:i<recent.length-1?6:0,borderBottom:i<recent.length-1?"0.5px solid "+BORDER:"none"}}><BookCover book={b} width={30} height={40} fontSize={6} style={{borderRadius:3}}/><div style={{flex:1}}><div style={{fontSize:10,fontWeight:600,color:TEXT}}>{b.title}</div><div style={{fontSize:8,color:MUTED}}>{b.author} · {b.date}</div></div><Stars val={b.rating}/></div>)}
+        </div>
+      </div>
+      <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:"10px 12px",display:"flex",flexDirection:"column",gap:6}}>
+        <div><div style={{fontSize:11,fontWeight:600,color:PRIMARY,marginBottom:4}}>오늘의 문장</div><div style={{background:"#f8f5f0",borderRadius:6,padding:"8px 10px",borderLeft:"3px solid "+PRIMARY}}><div style={{fontSize:10,color:"#444",lineHeight:1.5,fontStyle:"italic"}}>"{todayQ.text}"</div><div style={{fontSize:8,color:MUTED,marginTop:3,textAlign:"right"}}>— {todayQ.source}</div></div></div>
+        <div><div style={{fontSize:11,fontWeight:600,color:PRIMARY,marginBottom:4}}>오늘의 단어</div><div style={{background:"#f0f7f4",borderRadius:6,padding:"8px 10px"}}><div style={{display:"flex",alignItems:"baseline",gap:6}}><span style={{fontSize:14,fontWeight:700,color:PRIMARY}}>{todayW.word}</span><span style={{fontSize:10,color:MUTED}}>{todayW.hanja}</span></div><div style={{fontSize:9,color:"#666",marginTop:2}}>{todayW.def}</div></div></div>
+      </div>
+    </div>
+  </div>);
+}
+
+function LibraryPage({books,onSelect,onDelete,onAdd}){
+  const [search,setSearch]=useState(""),[filter,setFilter]=useState("전체"),[sort,setSort]=useState("최신순");
+  let list=books.filter(b=>filter==="전체"||b.status===filter).filter(b=>b.title.includes(search)||b.author.includes(search));
+  if(sort==="제목순")list=[...list].sort((a,b)=>a.title.localeCompare(b.title));
+  else if(sort==="평점순")list=[...list].sort((a,b)=>b.rating-a.rating);
+  else list=[...list].sort((a,b)=>b.date.localeCompare(a.date));
+  return(<div>
+    <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"center"}}><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 책 제목, 저자 검색..." style={{flex:1,border:"0.5px solid "+BORDER,borderRadius:6,padding:"6px 10px",fontSize:12,outline:"none"}}/><button onClick={onAdd} style={{padding:"6px 14px",background:PRIMARY,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600,flexShrink:0}}>+ 책 추가</button></div>
+    <div style={{display:"flex",gap:4,marginBottom:6,flexWrap:"wrap",alignItems:"center"}}>{["전체","완독","읽는 중","미독"].map(s=><button key={s} onClick={()=>setFilter(s)} style={{padding:"3px 10px",fontSize:11,border:"0.5px solid "+(filter===s?PRIMARY:BORDER),background:filter===s?PRIMARY:"#fff",color:filter===s?"#fff":TEXT,borderRadius:20,cursor:"pointer"}}>{s}</button>)}<select value={sort} onChange={e=>setSort(e.target.value)} style={{marginLeft:"auto",border:"0.5px solid "+BORDER,borderRadius:6,padding:"3px 8px",fontSize:11,outline:"none"}}>{["최신순","제목순","평점순"].map(s=><option key={s}>{s}</option>)}</select></div>
+    <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{list.length}권</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{list.map(b=><BookCard key={b.id} book={b} onClick={onSelect} onDelete={bk=>onDelete(bk.id)}/>)}</div>
+    {list.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:MUTED,fontSize:13}}>책이 없습니다.</div>}
+  </div>);
+}
+
+function ReadingPage({books,onSelect,onDelete}){
+  const list=books.filter(b=>b.status==="읽는 중");
+  return(<div>
+    <div style={{fontSize:13,fontWeight:600,color:TEXT,marginBottom:12}}>현재 읽는 중 ({list.length}권)</div>
+    {list.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:MUTED}}>읽는 중인 책이 없습니다.</div>}
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>{list.map(b=><div key={b.id} style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,padding:14,display:"flex",gap:12,position:"relative"}}><div onClick={()=>onSelect(b)} style={{cursor:"pointer",flexShrink:0}}><BookCover book={b} width={56} height={76} fontSize={9} style={{borderRadius:5}}/></div><div style={{flex:1,cursor:"pointer"}} onClick={()=>onSelect(b)}><div style={{fontWeight:700,fontSize:14,color:TEXT}}>{b.title}</div><div style={{fontSize:11,color:MUTED,marginBottom:6}}>{b.author}</div><div style={{height:6,background:BORDER,borderRadius:3,overflow:"hidden",marginBottom:3}}><div style={{height:"100%",background:PRIMARY,width:Math.round((b.readPages/b.pages)*100)+"%",borderRadius:3}}/></div><div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:MUTED}}><span>{b.readPages}p / {b.pages}p</span><span>{Math.round((b.readPages/b.pages)*100)}%</span></div></div><button onClick={()=>onDelete(b.id)} style={{position:"absolute",top:8,right:8,width:22,height:22,border:"none",background:"#fff5f5",borderRadius:4,cursor:"pointer",fontSize:12,color:CORAL}}>✕</button></div>)}</div>
+  </div>);
+}
+
+function GoalsPage({goals,weekData,onEdit}){
+  const maxW=Math.max(...weekData.map(d=>d.min),1);
+  return(<div style={{display:"flex",flexDirection:"column",gap:12}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:13,fontWeight:600,color:TEXT}}>독서 목표 (2026년)</div><button onClick={onEdit} style={{padding:"5px 14px",background:PRIMARY,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>✏️ 목표 편집</button></div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>{[{l:"연간 목표",done:goals.annualDone,goal:goals.annual,c:PRIMARY},{l:"월간 목표",done:goals.monthlyDone,goal:goals.monthly,c:AMBER},{l:"주간 목표",done:goals.weeklyDone,goal:goals.weekly,c:ACCENT}].map(g=><div key={g.l} style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,padding:16,textAlign:"center"}}><div style={{fontSize:12,fontWeight:600,color:TEXT,marginBottom:10}}>{g.l}</div><div style={{display:"flex",justifyContent:"center",marginBottom:8}}><Ring pct={Math.min(100,Math.round((g.done/g.goal)*100))} color={g.c} size={72} stroke={7}/></div><div style={{fontSize:13,fontWeight:700,color:TEXT}}>{g.done} / {g.goal}권</div></div>)}</div>
+    <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,padding:16}}><div style={{fontSize:12,fontWeight:600,color:TEXT,marginBottom:10}}>이번 주 독서 시간</div><div style={{display:"flex",alignItems:"flex-end",gap:8,height:100}}>{weekData.map((d,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,height:"100%",justifyContent:"flex-end"}}><span style={{fontSize:9,color:MUTED}}>{d.min?d.min+"분":""}</span><div style={{width:"100%",background:PRIMARY,borderRadius:"4px 4px 0 0",height:d.min?Math.max(4,Math.round((d.min/maxW)*70))+"px":"3px",opacity:d.min?1:0.2}}/><span style={{fontSize:10,color:MUTED}}>{d.day}</span></div>)}</div></div>
+  </div>);
+}
+
+function StatsPage({books}){
+  const done=books.filter(b=>b.status==="완독").length,unread=books.filter(b=>b.status==="미독").length,reading=books.filter(b=>b.status==="읽는 중").length;
+  const rated=books.filter(b=>b.rating>0),avg=rated.length>0?(rated.reduce((a,b)=>a+b.rating,0)/rated.length).toFixed(1):"0.0";
+  const catC=CATS.map((c,i)=>({cat:c,count:books.filter(b=>b.category===c).length,color:CAT_COLORS[i]})).sort((a,b)=>b.count-a.count),maxC=Math.max(...catC.map(c=>c.count),1);
+  return(<div style={{display:"flex",flexDirection:"column",gap:10}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>{[{l:"총 보유",v:books.length+"권",bg:"#e6f1fb"},{l:"완독",v:done+"권",bg:"#eaf3de"},{l:"미독",v:unread+"권",bg:"#faeeda"},{l:"평균 별점",v:"★"+avg,bg:"#fff8e1"}].map(s=><div key={s.l} style={{background:s.bg,borderRadius:8,padding:"12px 14px",textAlign:"center"}}><div style={{fontSize:10,color:MUTED,marginBottom:4}}>{s.l}</div><div style={{fontSize:20,fontWeight:700,color:TEXT}}>{s.v}</div></div>)}</div>
+    <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,padding:14}}><div style={{fontSize:12,fontWeight:600,color:TEXT,marginBottom:10}}>카테고리별 보유 현황</div><div style={{display:"flex",flexDirection:"column",gap:7}}>{catC.map(c=><div key={c.cat} style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:88,fontSize:10,color:MUTED,textAlign:"right",flexShrink:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.cat}</div><div style={{flex:1,height:14,background:BORDER,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",background:c.color,width:Math.round((c.count/maxC)*100)+"%",borderRadius:3}}/></div><div style={{fontSize:10,color:TEXT,fontWeight:600,width:28,textAlign:"right"}}>{c.count}</div></div>)}</div></div>
+    <div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,padding:14}}><div style={{fontSize:12,fontWeight:600,color:TEXT,marginBottom:10}}>독서 상태 분포</div><div style={{display:"flex",gap:10,alignItems:"center"}}><Donut data={[done||1,reading||1,unread||1]} colors={[PRIMARY,AMBER,"#d8d0c0"]} size={100}/><div style={{display:"flex",flexDirection:"column",gap:8}}>{[{l:"완독",v:done,c:PRIMARY},{l:"읽는 중",v:reading,c:AMBER},{l:"미독",v:unread,c:"#d8d0c0"}].map(s=><div key={s.l} style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:"50%",background:s.c}}/><span style={{fontSize:11,color:MUTED,width:48}}>{s.l}</span><span style={{fontSize:13,fontWeight:600,color:TEXT}}>{s.v}권</span></div>)}</div></div></div>
+  </div>);
+}
+
+function QuotesPage(){
+  const [tab,setTab]=useState("문장");
+  return(<div><div style={{display:"flex",gap:0,marginBottom:12}}>{["문장","어휘"].map(t=><button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:"7px 0",fontSize:12,border:"0.5px solid "+BORDER,background:tab===t?PRIMARY:"#fff",color:tab===t?"#fff":TEXT,cursor:"pointer",borderRadius:t==="문장"?"6px 0 0 6px":"0 6px 6px 0"}}>{t}</button>)}</div>
+    {tab==="문장"&&QUOTES.map((q,i)=><div key={i} style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:14,borderLeft:"4px solid "+PRIMARY,marginBottom:8}}><div style={{fontSize:13,color:TEXT,lineHeight:1.6,fontStyle:"italic",marginBottom:6}}>"{q.text}"</div><div style={{fontSize:10,color:MUTED,textAlign:"right"}}>— {q.source}</div></div>)}
+    {tab==="어휘"&&WORDS.map((w,i)=><div key={i} style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:8,padding:14,marginBottom:8}}><div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:4}}><span style={{fontSize:18,fontWeight:700,color:PRIMARY}}>{w.word}</span><span style={{fontSize:12,color:MUTED}}>{w.hanja}</span></div><div style={{fontSize:12,color:TEXT,marginBottom:4}}>{w.def}</div><div style={{fontSize:10,color:MUTED,background:"#f8f5f0",padding:"4px 8px",borderRadius:4}}>예) {w.ex}</div></div>)}
+  </div>);
+}
+
+function SearchPage({books,onSelect,onDelete}){
+  const [q,setQ]=useState("");
+  const res=q.length>0?books.filter(b=>b.title.includes(q)||b.author.includes(q)||b.category.includes(q)):[];
+  return(<div>
+    <div style={{position:"relative",marginBottom:12}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:14,color:MUTED}}>🔍</span><input value={q} onChange={e=>setQ(e.target.value)} placeholder="책 제목, 저자, 카테고리 검색..." autoFocus style={{width:"100%",border:"1px solid "+BORDER,borderRadius:8,padding:"10px 10px 10px 32px",fontSize:13,outline:"none",boxSizing:"border-box"}}/></div>
+    {q.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:MUTED,fontSize:13}}>검색어를 입력하세요.</div>}
+    {q.length>0&&res.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:MUTED}}>'{q}'에 대한 결과가 없습니다.</div>}
+    {res.length>0&&<div style={{fontSize:11,color:MUTED,marginBottom:8}}>{res.length}건 검색됨</div>}
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>{res.map(b=><BookCard key={b.id} book={b} onClick={onSelect} onDelete={bk=>onDelete(bk.id)}/>)}</div>
+  </div>);
+}
+
+function PurchasePage(){
+  const [view,setView]=useState("table"),[tip,setTip]=useState(null);
+  const allRows=[...PURCHASE["중기"],...PURCHASE["초기"]];
+  const maxB=Math.max(...allRows.map(r=>r.books)),maxP=Math.max(...allRows.map(r=>r.price)),recentC="#c04a2a";
+  const sorted=allRows.filter(r=>r.year).sort((a,b)=>a.year-b.year);
+  const W=560,H=220,pL=46,pR=16,pT=20,pB=32,gW=W-pL-pR,gH=H-pT-pB,n=sorted.length;
+  const xP=i=>pL+Math.round((i/(n-1))*gW),yB=v=>pT+Math.round((1-v/maxB)*gH),yPr=v=>pT+Math.round((1-v/maxP)*gH);
+  const bPts=sorted.map((r,i)=>({x:xP(i),y:yB(r.books),r})),pPts=sorted.map((r,i)=>({x:xP(i),y:yPr(r.price),r}));
+  return(<div style={{display:"flex",flexDirection:"column",gap:12}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>{[{l:"총 구매 기간",v:"2003 ~ 2016",ic:"📅",bg:"#e6f1fb"},{l:"총 구매 도서",v:"1,396권",ic:"📚",bg:"#eaf3de"},{l:"총 구매 금액",v:"₩18,758,980",ic:"💰",bg:"#faeeda"}].map(s=><div key={s.l} style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}><div style={{width:36,height:36,borderRadius:8,background:s.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{s.ic}</div><div><div style={{fontSize:10,color:MUTED}}>{s.l}</div><div style={{fontSize:14,fontWeight:700,color:TEXT}}>{s.v}</div></div></div>)}</div>
+    <div style={{display:"flex",gap:0,alignSelf:"flex-end"}}>{[["table","📋 표"],["chart","📈 꺾은선"]].map(([k,l])=><button key={k} onClick={()=>setView(k)} style={{padding:"5px 14px",fontSize:11,border:"0.5px solid "+BORDER,background:view===k?PRIMARY:"#fff",color:view===k?"#fff":TEXT,cursor:"pointer",borderRadius:k==="table"?"6px 0 0 6px":"0 6px 6px 0",fontWeight:view===k?600:400}}>{l}</button>)}</div>
+    {view==="table"&&(<div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,overflow:"hidden"}}>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr style={{background:"#1e3a30"}}>{["구분","연도","구매 도서 (권)","구매 금액 (원)"].map((h,i)=><th key={h} style={{padding:"10px 12px",color:"#fff",fontWeight:600,textAlign:i<=1?"center":"right",fontSize:11}}>{h}</th>)}</tr></thead>
+        <tbody>
+          {Object.entries(PURCHASE).map(([grp,rows])=>rows.map((r,i)=>{const rc=r.recent,tc=rc?recentC:TEXT;return(<tr key={(r.year||r.label)+grp} style={{background:i%2===0?"#fff":"#fafaf8",borderBottom:"0.5px solid "+BORDER}}>{i===0&&<td rowSpan={rows.length} style={{textAlign:"center",fontWeight:700,fontSize:13,color:"#fff",background:GRP_COLOR[grp],verticalAlign:"middle",padding:"8px 12px",borderRight:"0.5px solid rgba(255,255,255,0.2)"}}>{grp}</td>}<td style={{textAlign:"center",padding:"8px 12px",color:tc,fontWeight:rc?600:400}}>{r.year||r.label}</td><td style={{textAlign:"right",padding:"8px 16px",color:tc,fontWeight:rc?600:400}}>{fmtNum(r.books)}</td><td style={{textAlign:"right",padding:"8px 16px",color:tc,fontWeight:rc?600:400}}>{fmtNum(r.price)}</td></tr>);})}
+          <tr style={{background:"#f0f7f4",borderTop:"2px solid "+PRIMARY}}><td colSpan={2} style={{textAlign:"center",padding:"10px 12px",fontWeight:700,fontSize:12,color:PRIMARY}}>합계</td><td style={{textAlign:"right",padding:"10px 16px",fontWeight:700,color:PRIMARY,fontSize:13}}>1,396</td><td style={{textAlign:"right",padding:"10px 16px",fontWeight:700,color:"#185fa5",fontSize:13}}>18,758,980</td></tr>
+        </tbody>
+      </table>
+      <div style={{padding:"6px 12px",background:"#faeeda",display:"flex",gap:16,fontSize:9,color:"#854f0b"}}><span style={{color:recentC,fontWeight:600}}>● 빨간색</span><span>최근 3년</span><span style={{color:GRP_COLOR["중기"],fontWeight:600}}>● 청록</span><span>중기</span><span style={{color:GRP_COLOR["초기"],fontWeight:600}}>● 초록</span><span>초기</span></div>
+    </div>)}
+    {view==="chart"&&(<div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,padding:16}}>
+      <div style={{fontSize:11,fontWeight:600,color:TEXT,marginBottom:8}}>연도별 구매 현황 (꺾은선 그래프)</div>
+      <div style={{display:"flex",gap:16,marginBottom:10,flexWrap:"wrap"}}>{[["📚 구매 도서 수",PRIMARY],["💰 구매 금액","#185fa5"]].map(([l,cl])=><div key={l} style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:MUTED}}><svg width={24} height={10}><line x1={0} y1={5} x2={24} y2={5} stroke={cl} strokeWidth={2}/><circle cx={12} cy={5} r={3} fill={cl}/></svg>{l}</div>)}<div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:MUTED}}><div style={{width:10,height:10,borderRadius:"50%",background:recentC}}/>최근 3년</div></div>
+      <svg width={W} height={H} style={{display:"block"}} onMouseLeave={()=>setTip(null)}>
+        {Array.from({length:6},(_,i)=>{const y=pT+Math.round((i/5)*gH);return<line key={i} x1={pL} y1={y} x2={W-pR} y2={y} stroke={BORDER} strokeWidth={0.5}/>;  })}
+        <line x1={pL} y1={pT+gH} x2={W-pR} y2={pT+gH} stroke="#ccc" strokeWidth={1}/>
+        {sorted.map((r,i)=><text key={r.year} x={xP(i)} y={H-4} textAnchor="middle" fontSize={9} fill={r.recent?recentC:MUTED}>{r.year}</text>)}
+        {Array.from({length:6},(_,i)=>{const v=Math.round((maxB/5)*(5-i));return<text key={i} x={pL-4} y={pT+Math.round((i/5)*gH)+3} textAnchor="end" fontSize={8} fill={MUTED}>{v}</text>;})}
+        <polygon points={pL+","+(pT+gH)+" "+bPts.map(p=>p.x+","+p.y).join(" ")+" "+(pL+gW)+","+(pT+gH)} fill={PRIMARY} fillOpacity={0.07}/>
+        <polyline points={bPts.map(p=>p.x+","+p.y).join(" ")} fill="none" stroke={PRIMARY} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"/>
+        <polygon points={pL+","+(pT+gH)+" "+pPts.map(p=>p.x+","+p.y).join(" ")+" "+(pL+gW)+","+(pT+gH)} fill="#185fa5" fillOpacity={0.06}/>
+        <polyline points={pPts.map(p=>p.x+","+p.y).join(" ")} fill="none" stroke="#185fa5" strokeWidth={2} strokeDasharray="5,3" strokeLinejoin="round" strokeLinecap="round"/>
+        {bPts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r={p.r.recent?5:4} fill={p.r.recent?recentC:PRIMARY} stroke="#fff" strokeWidth={1.5} style={{cursor:"pointer"}} onMouseEnter={()=>setTip({x:p.x,y:p.y,year:p.r.year,books:p.r.books,price:p.r.price})}/>)}
+        {pPts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r={p.r.recent?5:4} fill={p.r.recent?"#e8a040":"#185fa5"} stroke="#fff" strokeWidth={1.5} style={{cursor:"pointer"}} onMouseEnter={()=>setTip({x:p.x,y:p.y,year:p.r.year,books:p.r.books,price:p.r.price})}/>)}
+        {bPts.map((p,i)=><text key={i} x={p.x} y={p.y-8} textAnchor="middle" fontSize={8} fill={p.r.recent?recentC:PRIMARY} fontWeight="600">{p.r.books}</text>)}
+        {tip&&<g><rect x={Math.min(tip.x+8,W-108)} y={tip.y-40} width={100} height={40} rx={4} fill="#2d3a2e" fillOpacity={0.9}/><text x={Math.min(tip.x+58,W-58)} y={tip.y-25} textAnchor="middle" fontSize={9} fill="#fff" fontWeight="600">{tip.year}년</text><text x={Math.min(tip.x+58,W-58)} y={tip.y-13} textAnchor="middle" fontSize={8} fill="#7ec8a0">📚 {tip.books}권</text><text x={Math.min(tip.x+58,W-58)} y={tip.y-2} textAnchor="middle" fontSize={8} fill="#90c8f0">₩{(tip.price/10000).toFixed(0)}만원</text></g>}
+      </svg>
+    </div>)}
+  </div>);
+}
+
+function App(){
+  const [books,setBooks]=useState(()=>loadLS("bn_books",BOOKS_INIT));
+  const [goals,setGoals]=useState(()=>loadLS("bn_goals",GOALS_INIT));
+  const [weekData,setWeekData]=useState(()=>loadLS("bn_week",WEEK_INIT));
+  const [page,setPage]=useState("home");
+  const [selBook,setSelBook]=useState(null);
+  const [showAdd,setShowAdd]=useState(false);
+  const [showCatDetail,setShowCatDetail]=useState(false);
+  const [showGoalsEdit,setShowGoalsEdit]=useState(false);
+  const [sidebarOpen,setSidebarOpen]=useState(true);
+  const [toast,setToast]=useState(null);
+  const [confirmDel,setConfirmDel]=useState(null);
+
+  useEffect(()=>saveLS("bn_books",books),[books]);
+  useEffect(()=>saveLS("bn_goals",goals),[goals]);
+  useEffect(()=>saveLS("bn_week",weekData),[weekData]);
+
+  const showToast=msg=>setToast(msg);
+  const updateBook=u=>{setBooks(bs=>bs.map(b=>b.id===u.id?u:b));showToast("✅ 저장되었습니다");};
+  const addBook=b=>{setBooks(bs=>[b,...bs]);showToast("📖 책이 추가되었습니다");};
+  const deleteBook=id=>{setBooks(bs=>bs.filter(b=>b.id!==id));showToast("🗑 삭제되었습니다");};
+  const handleDelete=id=>{const bk=books.find(b=>b.id===id);setConfirmDel({id,title:bk?bk.title:""});};
+  const pageTitle=NAV.find(n=>n.key===page)?.label||"홈";
+
+  return(<div style={{display:"flex",width:"100%",height:"100vh",background:BG,fontFamily:"'Noto Sans KR',system-ui,sans-serif",overflow:"hidden"}}>
+    <div style={{width:sidebarOpen?190:52,minWidth:sidebarOpen?190:52,background:PRIMARY,display:"flex",flexDirection:"column",transition:"width 0.2s,min-width 0.2s",overflow:"hidden"}}>
+      <div style={{padding:"14px 12px 10px",borderBottom:"0.5px solid rgba(255,255,255,0.12)",display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:20,flexShrink:0}}>📚</span>
+        {sidebarOpen&&<div><div style={{fontSize:14,fontWeight:700,color:"#fff"}}>Oh! MyBook</div><div style={{fontSize:9,color:"rgba(255,255,255,0.5)"}}>내 삶을 채우는 순간</div></div>}
+      </div>
+      <nav style={{flex:1,padding:"6px 0",overflowY:"auto"}}>{NAV.map(n=><div key={n.key} onClick={()=>setPage(n.key)} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",cursor:"pointer",color:page===n.key?"#fff":"rgba(255,255,255,0.6)",background:page===n.key?"rgba(255,255,255,0.15)":"transparent",borderLeft:page===n.key?"3px solid #7ec8a0":"3px solid transparent",fontSize:12,whiteSpace:"nowrap",overflow:"hidden"}}><span style={{fontSize:14,flexShrink:0}}>{n.icon}</span>{sidebarOpen&&n.label}</div>)}</nav>
+      {sidebarOpen&&<div style={{margin:"8px 10px",background:"rgba(0,0,0,0.2)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"rgba(255,255,255,0.7)",lineHeight:1.5,fontStyle:"italic"}}>"책은 가장 조용하고 변함없는 친구다."</div><div style={{fontSize:8,color:"rgba(255,255,255,0.4)",marginTop:3}}>— 찰스 W. 엘리엇</div></div>}
+      <div style={{padding:"8px 10px",borderTop:"0.5px solid rgba(255,255,255,0.1)"}}><button onClick={()=>setSidebarOpen(s=>!s)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"none",color:"rgba(255,255,255,0.6)",borderRadius:6,padding:"5px 0",cursor:"pointer",fontSize:12}}>{sidebarOpen?"◀ 접기":"▶"}</button></div>
+    </div>
+    <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0,overflow:"hidden"}}>
+      <div style={{background:"#fff",padding:"0 16px",height:48,display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"0.5px solid "+BORDER,flexShrink:0}}>
+        <div><span style={{fontSize:13,fontWeight:700,color:PRIMARY}}>{pageTitle}</span>{page==="home"&&<span style={{fontSize:10,color:MUTED,marginLeft:8}}>2026년 6월 14일 (일) · 오늘도 책과 함께 🌿</span>}</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {page!=="search"&&<input placeholder="🔍 검색..." onFocus={()=>setPage("search")} style={{border:"0.5px solid "+BORDER,borderRadius:6,padding:"4px 10px",fontSize:11,outline:"none",width:160}}/>}
+          <button onClick={()=>setShowAdd(true)} style={{padding:"4px 12px",background:PRIMARY,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>+ 추가</button>
+          <div style={{position:"relative",width:28,height:28,background:BG,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"0.5px solid "+BORDER}}><span style={{fontSize:14}}>🔔</span><span style={{position:"absolute",top:-3,right:-3,background:"#e05c3a",color:"#fff",fontSize:8,width:13,height:13,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>3</span></div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
+        {page==="home"&&<HomePage books={books} goals={goals} weekData={weekData} onCatDetail={()=>setShowCatDetail(true)} onEditGoals={()=>setShowGoalsEdit(true)}/>}
+        {page==="library"&&<LibraryPage books={books} onSelect={setSelBook} onDelete={handleDelete} onAdd={()=>setShowAdd(true)}/>}
+        {page==="purchase"&&<PurchasePage/>}
+        {page==="reading"&&<ReadingPage books={books} onSelect={setSelBook} onDelete={handleDelete}/>}
+        {page==="wishlist"&&<LibraryPage books={books.filter(b=>b.status==="미독")} onSelect={setSelBook} onDelete={handleDelete} onAdd={()=>setShowAdd(true)}/>}
+        {page==="goals"&&<GoalsPage goals={goals} weekData={weekData} onEdit={()=>setShowGoalsEdit(true)}/>}
+        {page==="stats"&&<StatsPage books={books}/>}
+        {page==="quotes"&&<QuotesPage/>}
+        {page==="search"&&<SearchPage books={books} onSelect={setSelBook} onDelete={handleDelete}/>}
+        {page==="settings"&&<div style={{padding:24}}><div style={{fontSize:13,fontWeight:700,color:TEXT,marginBottom:16}}>⚙️ 설정</div><div style={{background:"#fff",border:"0.5px solid "+BORDER,borderRadius:10,padding:16}}><div style={{fontSize:12,fontWeight:600,color:TEXT,marginBottom:12}}>데이터 관리</div><button onClick={()=>{if(window.confirm("모든 데이터를 초기화할까요?")){setBooks(BOOKS_INIT);setGoals(GOALS_INIT);setWeekData(WEEK_INIT);showToast("🔄 초기화되었습니다");}}} style={{padding:"8px 16px",background:"#fff5f5",color:CORAL,border:"0.5px solid #f0c0c0",borderRadius:6,cursor:"pointer",fontSize:12,fontWeight:600}}>🗑 전체 데이터 초기화</button><div style={{fontSize:10,color:MUTED,marginTop:8}}>※ 데이터는 브라우저에 자동 저장됩니다.</div></div></div>}
+      </div>
+    </div>
+    {showCatDetail&&<CatDetailModal onClose={()=>setShowCatDetail(false)}/>}
+    {selBook&&<EditModal book={selBook} onClose={()=>setSelBook(null)} onUpdate={updateBook} onDelete={id=>{setSelBook(null);handleDelete(id);}}/>}
+    {showAdd&&<AddModal onClose={()=>setShowAdd(false)} onAdd={addBook}/>}
+    {showGoalsEdit&&<GoalsModal goals={goals} weekData={weekData} onSaveGoals={setGoals} onSaveWeek={setWeekData} onClose={()=>setShowGoalsEdit(false)}/>}
+    {confirmDel&&<Confirm msg={"\""+confirmDel.title+"\"을(를) 삭제할까요?"} onOk={()=>{deleteBook(confirmDel.id);setConfirmDel(null);}} onCancel={()=>setConfirmDel(null)}/>}
+    {toast&&<Toast msg={toast} onDone={()=>setToast(null)}/>}
+  </div>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
